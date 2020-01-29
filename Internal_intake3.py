@@ -6,19 +6,26 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import math
 import numpy as np
+import os
 
+if not os.path.exists('temporary_results'):
+    os.makedirs('temporary_results')
+todelete_files = glob.glob('temporary_results/*.txt')
+for f in todelete_files:
+    os.remove(f)
 scenario = glob.glob('*.csv')
 for file in scenario:
     df = pd.read_csv(file)
-    # define temperature range
+# define temperature range
     df = df.dropna(subset=['Mean Temperature In C']).copy()
     max_temp = math.ceil(max(df['Mean Temperature In C']))
     min_temp = math.floor(min(df['Mean Temperature In C']))
     n_temp = (max_temp - min_temp) * 2
     tldf = pd.DataFrame(np.linspace(min_temp, max_temp, n_temp+1))
-    # Count temperature in range
+# Count temperature in range
     tls = pd.Series(tldf[0])
-    counttest = df.groupby(pd.cut(df['Mean Temperature In C'], tls, right=False)).count()
+    counttest = df.groupby(
+        pd.cut(df['Mean Temperature In C'], tls, right=False)).count()
     mtic_segment = counttest.iloc[:, 0:1].copy()
     mtic_segment.reset_index(inplace=True)
     mtic_segment.columns = ['Inlet Temperature', 'Number of IT Equipment']
@@ -56,9 +63,11 @@ for file in scenario:
     df_mtic = pd.DataFrame(mtic_segment)
     # Modify Y axis
     df_mtic['Inlet Temperature'] = df_mtic['Inlet Temperature'].astype(str)
-    df_mtic['Inlet Temperature'] = df_mtic['Inlet Temperature'].map(temp_range_dictionary)
+    df_mtic['Inlet Temperature'] = df_mtic['Inlet Temperature'].map(
+        temp_range_dictionary)
     # Export processed data to csv file
-    df_mtic.to_csv(f'temporary_results/{file[:-4]}_modified.txt', index=True, sep='\t')
+    df_mtic.to_csv(
+        f'temporary_results/{file[:-4]}_modified.txt', index=True, sep='\t')
     # Graph style
     sns.set(style='whitegrid')
     # Initialize the matplotlib figure
@@ -81,7 +90,8 @@ for file in scenario:
 
 # combine processed data
 filenames2 = glob.glob('temporary_results/*.txt')
-list_of_dfs = [pd.read_csv(filename2, delimiter='\t') for filename2 in filenames2]
+list_of_dfs = [pd.read_csv(filename2, delimiter='\t')
+               for filename2 in filenames2]
 for dataframe2, filename2 in zip(list_of_dfs, filenames2):
     dataframe2['Scenario'] = filename2[18:-13]
 combined_df = pd.concat(list_of_dfs, ignore_index=True, axis=0)
@@ -93,31 +103,25 @@ y_order2.columns = ['y_order']
 combined_df2 = list(dict.fromkeys(combined_df['Inlet Temperature']))
 y_order3 = [x for x in y_order2['y_order'] if x not in combined_df2]
 y_order = [x for x in y_order2['y_order'] if x not in y_order3]
-# plot combined data
+# ------------------------------------------------------------plot combined data
 plt.figure()
 f2, ax2 = plt.subplots(figsize=(14, 8))
 sns.barplot(x='Number of IT Equipment', y='Inlet Temperature', data=combined_df, hue='Scenario', palette='tab10',
             order=y_order)
 ax2.set(xlim=(0, 0.4))
 vals_summary = ax2.get_xticks()
-ax2.set_xticklabels(['{:,.0%}'.format(x_summary) for x_summary in vals_summary])
+ax2.set_xticklabels(['{:,.0%}'.format(x_summary)
+                     for x_summary in vals_summary])
 ax2.legend(ncol=2, loc="lower right", frameon=True)
 ax2 = plt.gca()
 # set the bar border width to 0
 plt.setp(ax2.patches, linewidth=0)
 # plot background area color
-ax2.axhspan(-0.5, 0.5, facecolor='grey', alpha=0.1)
-ax2.axhspan(1.5, 2.5, facecolor='grey', alpha=0.1)
-ax2.axhspan(3.5, 4.5, facecolor='grey', alpha=0.1)
-ax2.axhspan(5.5, 6.5, facecolor='grey', alpha=0.1)
-ax2.axhspan(7.5, 8.5, facecolor='grey', alpha=0.1)
-ax2.axhspan(9.5, 10.5, facecolor='grey', alpha=0.1)
-ax2.axhspan(11.5, 12.5, facecolor='grey', alpha=0.1)
-ax2.axhspan(13.5, 14.5, facecolor='grey', alpha=0.1)
+n_shade = 0
+while n_shade in range(0, n_temp * 4 + 2):
+    ax2.axhspan(n_shade - 0.5, n_shade + 0.5, facecolor='grey', alpha=0.1)
+    n_shade += 2
 # ax2.set_facecolor('lightblue')
 # Y axis
 plt.gca().invert_yaxis()
 plt.savefig('temporary_results/summary_figure', dpi=400)
-print(y_order)
-print(combined_df['Inlet Temperature'])
-print(y_order2['y_order'])
