@@ -7,12 +7,14 @@ import matplotlib.pyplot as plt
 import math
 import numpy as np
 import os
-
+# Create results folder
 if not os.path.exists('temporary_results'):
     os.makedirs('temporary_results')
+# Delete previous files of results
 todelete_files = glob.glob('temporary_results/*.txt')
 for f in todelete_files:
     os.remove(f)
+# Get raw csv files
 scenario = glob.glob('*.csv')
 for file in scenario:
     df = pd.read_csv(file)
@@ -29,13 +31,13 @@ for file in scenario:
     mtic_segment = counttest.iloc[:, 0:1].copy()
     mtic_segment.reset_index(inplace=True)
     mtic_segment.columns = ['Inlet Temperature', 'Number of IT Equipment']
-    # Calculate percentage
-    # total numbers of the IT servers
+# Calculate percentage
+# total numbers of the IT servers
     n_servers: Union[Union[Series, DataFrame], Any] = df['Location ID'].count()
     n_servers = int(n_servers)
-    # calculate percentage
+# calculate percentage
     mtic_segment.iloc[:, 1] = mtic_segment.iloc[:, 1] / n_servers
-    # Generate data frame
+# Generate data frame
     temp_range_dictionary = {
         '[14.0, 14.5)': '14≤T<14.5 \u00b0C', '[14.5, 15.0)': '14.5≤T<15 \u00b0C',
         '[15.0, 15.5)': '15≤T<15.5 \u00b0C', '[15.5, 16.0)': '15.5≤T<16 \u00b0C',
@@ -61,31 +63,31 @@ for file in scenario:
         '[35.5, 36.0)': '35.5≤T<36 \u00b0C', '[36.0, 36.5)': '36≤T<36.5 \u00b0C',
     }
     df_mtic = pd.DataFrame(mtic_segment)
-    # Modify Y axis
+# Modify Y axis
     df_mtic['Inlet Temperature'] = df_mtic['Inlet Temperature'].astype(str)
     df_mtic['Inlet Temperature'] = df_mtic['Inlet Temperature'].map(
         temp_range_dictionary)
-    # Export processed data to csv file
+# Export processed data to csv file
     df_mtic.to_csv(
         f'temporary_results/{file[:-4]}_modified.txt', index=True, sep='\t')
-    # Graph style
+# Graph style
     sns.set(style='whitegrid')
-    # Initialize the matplotlib figure
+# Initialize the matplotlib figure
     f, ax = plt.subplots(figsize=(14, 8))
-    # plot graph
+# plot graph
     sns.set_color_codes("muted")
     sns.barplot(x='Number of IT Equipment', y='Inlet Temperature', data=mtic_segment, label=f'{file[:-4]}',
                 color='b', ax=ax, order=df_mtic['Inlet Temperature']
                 )
-    # manipulate x axis to percentage
-    ax.set(xlim=(0, 0.4))
+# manipulate x axis to percentage
+    ax.set(xlim=(0, math.ceil(df_mtic['Number of IT Equipment'].max())))
     vals = ax.get_xticks()
     ax.set_xticklabels(['{:,.0%}'.format(x) for x in vals])
-    # Y axis
+# Y axis
     plt.gca().invert_yaxis()
-    # Legend
+# Legend
     ax.legend(ncol=2, loc="lower right", frameon=True)
-    # Export figure to csv file
+# Export figure to csv file
     plt.savefig(f'temporary_results/{file[:-4]}_figure', dpi=400)
 
 # combine processed data
@@ -108,7 +110,7 @@ plt.figure()
 f2, ax2 = plt.subplots(figsize=(14, 8))
 sns.barplot(x='Number of IT Equipment', y='Inlet Temperature', data=combined_df, hue='Scenario', palette='tab10',
             order=y_order)
-ax2.set(xlim=(0, 0.4))
+ax2.set(xlim=(0, math.ceil(df_mtic['Number of IT Equipment'].max())))
 vals_summary = ax2.get_xticks()
 ax2.set_xticklabels(['{:,.0%}'.format(x_summary)
                      for x_summary in vals_summary])
