@@ -3,10 +3,13 @@ from typing import Any, Union
 from pandas import Series, DataFrame
 import pandas as pd
 import seaborn as sns
+import matplotlib
 import matplotlib.pyplot as plt
 import math
 import numpy as np
 import os
+
+
 # Create results folder
 if not os.path.exists('temporary_results'):
     os.makedirs('temporary_results')
@@ -73,16 +76,29 @@ for file in scenario:
 # Graph style
     sns.set(style='whitegrid')
 # Initialize the matplotlib figure
-    f, ax = plt.subplots(figsize=(14, 8))
+    f, ax = plt.subplots(figsize=(10.5, 6))
 # plot graph
     sns.set_color_codes("muted")
     sns.barplot(x='Number of IT Equipment', y='Inlet Temperature', data=mtic_segment, label=f'{file[:-4]}',
                 color='b', ax=ax, order=df_mtic['Inlet Temperature']
                 )
 # manipulate x axis to percentage
-    ax.set(xlim=(0, math.ceil(df_mtic['Number of IT Equipment'].max())))
+    ax.set(
+        xlim=(0, math.ceil(df_mtic['Number of IT Equipment'].max() * 10) / 10))
+# Set Major ticklabel to each 10%
+    plt.gca().xaxis.set_major_locator(plt.MultipleLocator(0.1))
     vals = ax.get_xticks()
     ax.set_xticklabels(['{:,.0%}'.format(x) for x in vals])
+# for legend title
+    ax.set_xlabel('Percentage', fontname='Arial')
+# plot background area color for individual scenario
+    n_shade_1 = 0
+    t_shade_1 = 0
+    while t_shade_1 in range(0, math.floor((df_mtic['Inlet Temperature'].count() + 1) / 2)):
+        ax.axhspan(n_shade_1 - 0.5, n_shade_1 +
+                   0.5, facecolor='grey', alpha=0.05)
+        n_shade_1 += 2
+        t_shade_1 += 1
 # Y axis
     plt.gca().invert_yaxis()
 # Legend
@@ -105,12 +121,15 @@ y_order2.columns = ['y_order']
 combined_df2 = list(dict.fromkeys(combined_df['Inlet Temperature']))
 y_order3 = [x for x in y_order2['y_order'] if x not in combined_df2]
 y_order = [x for x in y_order2['y_order'] if x not in y_order3]
-# ------------------------------------------------------------plot combined data
+# plot combined data
 plt.figure()
-f2, ax2 = plt.subplots(figsize=(14, 8))
+f2, ax2 = plt.subplots(figsize=(10.5, 6))
 sns.barplot(x='Number of IT Equipment', y='Inlet Temperature', data=combined_df, hue='Scenario', palette='tab10',
-            order=y_order)
-ax2.set(xlim=(0, math.ceil(df_mtic['Number of IT Equipment'].max())))
+            order=y_order,)
+ax2.set(
+    xlim=(0, math.ceil(df_mtic['Number of IT Equipment'].max() * 10) / 10), )
+# Set Major ticklabel to each 10%
+plt.gca().xaxis.set_major_locator(plt.MultipleLocator(0.1))
 vals_summary = ax2.get_xticks()
 ax2.set_xticklabels(['{:,.0%}'.format(x_summary)
                      for x_summary in vals_summary])
@@ -118,12 +137,20 @@ ax2.legend(ncol=2, loc="lower right", frameon=True)
 ax2 = plt.gca()
 # set the bar border width to 0
 plt.setp(ax2.patches, linewidth=0)
-# plot background area color
+# for legend title
+ax2.set_ylabel('Inlet Temperature', fontname='Arial')
+ax2.set_xlabel('Percentage', fontname='Arial')
+# plot background area color for combined scenario
 n_shade = 0
-while n_shade in range(0, n_temp * 4 + 2):
-    ax2.axhspan(n_shade - 0.5, n_shade + 0.5, facecolor='grey', alpha=0.1)
+t_shade = 0
+while t_shade in range(0, math.floor((len(y_order) + 1) / 2)):
+    ax2.axhspan(n_shade - 0.5, n_shade + 0.5, facecolor='grey', alpha=0.05)
     n_shade += 2
+    t_shade += 1
 # ax2.set_facecolor('lightblue')
+
 # Y axis
 plt.gca().invert_yaxis()
+# Value label
+# Save the figure
 plt.savefig('temporary_results/summary_figure', dpi=400)
